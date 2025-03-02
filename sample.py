@@ -11,8 +11,21 @@ from langchain_openai import ChatOpenAI
 from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain import hub
+from openai import OpenAI
 
 load_dotenv()
+
+# Azure OpenAI credentials
+azure_api_key = os.getenv("AZURE_OPENAI_API_KEY")
+azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+azure_deployment_name = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME")
+
+# Set Azure OpenAI API parameters
+# openai.api_type = "azure"
+# openai.api_base = "https://ragstart.openai.azure.com/"
+# openai.api_version = "2022-12-01"
+# openai.api_key = os.getenv("AZURE_OPENAI_API_KEY")
+
 
 # Chunk the document based on h2 headers
 with open('wd.md', 'r') as file:
@@ -81,8 +94,8 @@ for ids in index.list(namespace=namespace):
         include_values=True,
         include_metadata=True
     )
-    print(query)
-    print("\n")
+    # print(query)
+    # print("\n")
 
 
 # Use the chatbot
@@ -94,8 +107,8 @@ retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
 retriever = docsearch.as_retriever()
 
 llm = ChatOpenAI(
-    openai_api_key=os.getenv('OPENAI_API_KEY'),
-    model_name='gpt-4o-mini',
+    openai_api_key=azure_api_key,
+    openai_api_base=azure_endpoint,
     temperature=0.0
 )
 
@@ -118,8 +131,51 @@ if __name__ == "__main__":
     # print(md_header_splits)
     # print('/n')
 
+    # pass
 
-    print("Index after upsert:")
-    print(pc.Index(index_name).describe_index_stats())
-    print("\n")
-    time.sleep(2)
+
+    # print("Index after upsert:")
+    # print(pc.Index(index_name).describe_index_stats())
+    # print("\n")
+    # time.sleep(2)
+
+    # answer1_with_knowledge = retrieval_chain.invoke({"input": query1})
+
+    # print("Answer with knowledge:\n\n", answer1_with_knowledge['answer'])
+    # print("\nContext used:\n\n", answer1_with_knowledge['context'])
+    # print("\n")
+    # time.sleep(2)
+
+    # answer2_with_knowledge = retrieval_chain.invoke({"input": query2})
+
+    # print("\nAnswer with knowledge:\n\n", answer2_with_knowledge['answer'])
+    # print("\nContext Used:\n\n", answer2_with_knowledge['context'])
+    # print("\n")
+    # time.sleep(2)
+
+
+    from openai import AzureOpenAI
+
+    # gets the API Key from environment variable AZURE_OPENAI_API_KEY
+    client = AzureOpenAI(
+        # https://learn.microsoft.com/azure/ai-services/openai/reference#rest-api-versioning
+        api_version="2024-08-01-preview",
+        # https://learn.microsoft.com/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#create-a-resource
+        azure_endpoint=azure_endpoint,
+        api_key=azure_api_key
+    )
+
+    completion = client.chat.completions.create(
+        model="gpt-35-turbo",  # e.g. gpt-35-instant
+        messages=[
+            {
+                "role": "user",
+                "content": "How do I output all files in a directory using Python?",
+            },
+        ],
+    )
+    print(completion.to_json())
+
+    # pc.delete_index(index_name)
+
+
